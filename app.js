@@ -6,8 +6,8 @@ const LEDGER_STORAGE_KEY = "projectRegistryMockLedgerRows";
 const USER_STORAGE_KEY = "projectRegistryMockUsers";
 const SESSION_TABLE_STORAGE_KEY = "projectRegistryMockSessions";
 const DEFAULT_USERS = [
-  { username: "admin", password: "Pr0iectȘimleu!2026", fullName: "Administrator Registru", role: "admin", active: "DA" },
-  { username: "operator", password: "Op3ratorȚehnic!2026", fullName: "Operator Proiecte", role: "user", active: "DA" }
+  { username: "admin", password: "Pr0iectSimleu!2026", fullName: "Administrator Registru", role: "admin", active: "DA" },
+  { username: "operator", password: "Op3ratorTehnic!2026", fullName: "Operator Proiecte", role: "user", active: "DA" }
 ];
 const ACTIVE_DEMO_USERS = [
   { username: "admin", password: "Pr0iectSimleu!2026", fullName: "Administrator Registru", role: "admin", active: "DA" },
