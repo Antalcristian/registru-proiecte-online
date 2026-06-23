@@ -34,6 +34,7 @@ const LEDGER_DIRECTIONS = ["Intrare", "Iesire"];
 const state = {
   session: {
     username: "",
+    password: "",
     fullName: "",
     role: "",
     sessionToken: "",
@@ -52,7 +53,6 @@ const state = {
 
 const el = (id) => document.getElementById(id);
 const todayIso = () => new Date().toISOString().slice(0, 10);
-let jsonpCounter = 0;
 
 function isMockBackend() {
   return !GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("PASTE_APPS_SCRIPT");
@@ -134,6 +134,7 @@ function setInlineStatus(targetId, message, type = "info") {
 function setSession(session) {
   state.session = {
     username: session.username || "",
+    password: session.password || state.session.password || "",
     fullName: session.fullName || "",
     role: session.role || "user",
     sessionToken: session.sessionToken || "",
@@ -146,6 +147,7 @@ function setSession(session) {
 function clearSession() {
   state.session = {
     username: "",
+    password: "",
     fullName: "",
     role: "",
     sessionToken: "",
@@ -600,53 +602,21 @@ async function mockApiPost(payload) {
   return { ok: false, message: "Actiune necunoscuta." };
 }
 
-function buildApiUrl(params) {
-  const url = new URL(GOOGLE_SCRIPT_URL);
-  Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null) return;
-    url.searchParams.set(key, String(value));
-  });
-  return url.toString();
-}
-
-function callApiJsonp(params) {
-  return new Promise((resolve, reject) => {
-    const callbackName = `projectRegistryJsonp_${Date.now()}_${jsonpCounter++}`;
-    const script = document.createElement("script");
-    const timeoutId = window.setTimeout(() => {
-      cleanup();
-      reject(new Error("Cererea catre Apps Script a expirat."));
-    }, 20000);
-
-    function cleanup() {
-      window.clearTimeout(timeoutId);
-      if (script.parentNode) script.parentNode.removeChild(script);
-      delete window[callbackName];
-    }
-
-    window[callbackName] = (payload) => {
-      cleanup();
-      resolve(payload);
-    };
-
-    script.onerror = () => {
-      cleanup();
-      reject(new Error("Nu s-a putut contacta Apps Script."));
-    };
-
-    script.src = buildApiUrl({ ...params, callback: callbackName, _: Date.now() });
-    document.body.appendChild(script);
-  });
-}
-
 async function callApiGet(params) {
   if (state.mockMode) return mockApiGet(params);
-  return callApiJsonp(params);
+  const qs = new URLSearchParams(params).toString();
+  const response = await fetch(`${GOOGLE_SCRIPT_URL}?${qs}`);
+  return await response.json();
 }
 
 async function callApiPost(payload) {
   if (state.mockMode) return mockApiPost(payload);
-  return callApiJsonp(payload);
+  const response = await fetch(GOOGLE_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  });
+  return await response.json();
 }
 
 function projectMatchesFilters(project) {
@@ -847,7 +817,12 @@ function renderLedgerRows() {
 async function loadProjects() {
   if (!(await requireActiveSession())) return;
   try {
-    const data = await callApiGet({ action: "projects", sessionToken: state.session.sessionToken });
+    const data = await callApiGet({
+      action: "projects",
+      username: state.session.username,
+      password: state.session.password,
+      sessionToken: state.session.sessionToken
+    });
     if (!data.ok) {
       setInlineStatus("formStatus", data.message || data.error || "Nu am putut incarca proiectele.", "error");
       if ((data.message || "").toLowerCase().includes("sesiune")) await logout(true);
@@ -868,7 +843,12 @@ async function loadProjects() {
 async function loadLedgerRows() {
   if (!(await requireActiveSession())) return;
   try {
-    const data = await callApiGet({ action: "ledgerentries", sessionToken: state.session.sessionToken });
+    const data = await callApiGet({
+      action: "ledgerentries",
+      username: state.session.username,
+      password: state.session.password,
+      sessionToken: state.session.sessionToken
+    });
     if (!data.ok) {
       setInlineStatus("ledgerStatus", data.message || data.error || "Nu am putut incarca registrul.", "error");
       if ((data.message || "").toLowerCase().includes("sesiune")) await logout(true);
@@ -887,9 +867,14 @@ async function loadLedgerRows() {
 }
 
 async function requireActiveSession() {
-  if (!state.session.sessionToken) return false;
+  if (!state.session.username || !state.session.password || !state.session.sessionToken) return false;
   try {
-    const data = await callApiGet({ action: "ping", sessionToken: state.session.sessionToken });
+    const data = await callApiGet({
+      action: "ping",
+      username: state.session.username,
+      password: state.session.password,
+      sessionToken: state.session.sessionToken
+    });
     if (!data.ok) {
       await logout(true);
       return false;
@@ -901,7 +886,8 @@ async function requireActiveSession() {
     setupInactivityTimer();
     return true;
   } catch {
-    return true;
+    await logout(true);
+    return false;
   }
 }
 
@@ -933,6 +919,7 @@ async function login() {
       setInlineStatus("loginStatus", data.message || data.error || "Login invalid.", "error");
       return;
     }
+    data.password = password;
     setSession(data);
     saveRememberedCredentials(el("rememberLogin").checked);
     showApp();
@@ -942,14 +929,6 @@ async function login() {
     setInlineStatus("loginStatus", "", "info");
   } catch (error) {
     const message = String(error && error.message ? error.message : error);
-    if (message.toLowerCase().includes("failed to fetch") || message.toLowerCase().includes("apps script")) {
-      setInlineStatus(
-        "loginStatus",
-        "Nu s-a putut realiza loginul. Copiaza noul Code.gs in Apps Script, da Deploy pe versiunea noua si urca noul app.js pe GitHub Pages.",
-        "error"
-      );
-      return;
-    }
     setInlineStatus("loginStatus", `Nu s-a putut realiza loginul: ${message}`, "error");
   }
 }
@@ -958,7 +937,12 @@ async function logout(isAutomatic) {
   const sessionToken = state.session.sessionToken;
   if (sessionToken) {
     try {
-      await callApiPost({ action: "logout", sessionToken });
+      await callApiPost({
+        action: "logout",
+        username: state.session.username,
+        password: state.session.password,
+        sessionToken
+      });
     } catch {
       // ignore logout errors
     }
@@ -977,14 +961,23 @@ async function logout(isAutomatic) {
 }
 
 function sendLogoutBeacon() {
-  if (!state.session.sessionToken) return;
+  if (!state.session.username || !state.session.sessionToken) return;
   if (state.mockMode) {
     deactivateMockSession(state.session.sessionToken);
     clearSession();
     return;
   }
-  const image = new Image();
-  image.src = buildApiUrl({ action: "logout", sessionToken: state.session.sessionToken, _: Date.now() });
+  try {
+    const payload = JSON.stringify({
+      action: "logout",
+      username: state.session.username,
+      password: state.session.password,
+      sessionToken: state.session.sessionToken
+    });
+    navigator.sendBeacon(GOOGLE_SCRIPT_URL, new Blob([payload], { type: "text/plain;charset=utf-8" }));
+  } catch {
+    // ignore unload errors
+  }
   clearSession();
 }
 
@@ -1003,6 +996,8 @@ async function saveProject() {
   try {
     const response = await callApiPost({
       action: state.editProjectRowIndex ? "updateproject" : "saveproject",
+      username: state.session.username,
+      password: state.session.password,
       sessionToken: state.session.sessionToken,
       rowIndex: state.editProjectRowIndex,
       ...payload
@@ -1038,6 +1033,8 @@ async function saveLedgerRow() {
   try {
     const response = await callApiPost({
       action: state.editLedgerRowIndex ? "updateledger" : "saveledger",
+      username: state.session.username,
+      password: state.session.password,
       sessionToken: state.session.sessionToken,
       rowIndex: state.editLedgerRowIndex,
       ...payload
@@ -1142,7 +1139,12 @@ function initialize() {
   window.setInterval(async () => {
     if (!state.session.sessionToken) return;
     try {
-      const result = await callApiGet({ action: "ping", sessionToken: state.session.sessionToken });
+      const result = await callApiGet({
+        action: "ping",
+        username: state.session.username,
+        password: state.session.password,
+        sessionToken: state.session.sessionToken
+      });
       if (!result.ok) await logout(true);
     } catch {
       // ignore transient errors
