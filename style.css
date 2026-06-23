@@ -94,6 +94,8 @@ textarea {
 .certrom-logo {
   width: 128px;
   max-width: 100%;
+  height: auto;
+  display: block;
 }
 
 .brand-mark-copy,
