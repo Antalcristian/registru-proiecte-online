@@ -1,4 +1,4 @@
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwFUpOIqF7WFIwb2zH_w5DHsWpWZfQYsLuyGIJ1Z_TFYWHSc6yjmk8rPLkF2ycWOzcT/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxjyoeTapub57qLu0Gou6h1VNG4Sq2kmdAQeHYPnAFC_fGsczxDPF2rEf_Qfo6LHHAI/exec";
 const SESSION_TIMEOUT_MS = 15 * 60 * 1000;
 const SESSION_STORAGE_KEY = "projectRegistrySession";
 const PROJECT_STORAGE_KEY = "projectRegistryMockProjects";
