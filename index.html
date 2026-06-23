@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registru Proiecte | Proiect Construct Regiunea Transilvania</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="brand-shell">
+      <div class="brand-top-line"></div>
+      <div class="brand-grid">
+        <div class="brand-mark">
+          <img src="./assets/bridge-mark.svg" alt="Proiect Construct" class="brand-logo" />
+          <div class="brand-mark-copy">
+            <span>Proiect Construct</span>
+            <span>Regiunea Transilvania</span>
+          </div>
+        </div>
+        <div class="brand-copy">
+          <h1>S.C. PROIECT - CONSTRUCT REGIUNEA TRANSILVANIA S.R.L.</h1>
+          <p class="brand-address">Oradea, str. Matei Corvin, nr. 290, jud. Bihor</p>
+          <p>Tel.: 0360/568484 / Fax: 0360/402752</p>
+          <p>Nr. inreg. J51/405/2013, CUI: RO 23719545</p>
+          <p>E-mail: <a href="mailto:proiectctransilvania@yahoo.com">proiectctransilvania@yahoo.com</a></p>
+          <p>Site: <a href="https://www.proiecttransilvania.ro" target="_blank" rel="noreferrer">www.proiecttransilvania.ro</a></p>
+        </div>
+        <div class="brand-badge">
+          <img src="./assets/certrom-badge.svg" alt="CertRom" class="certrom-logo" />
+          <div class="brand-badge-copy">
+            <span>Sistem de management certificat</span>
+            <span>ISO 9001 | ISO 14001</span>
+          </div>
+        </div>
+      </div>
+      <div class="brand-bottom-line"></div>
+    </header>
+
+    <main class="main-shell">
+      <section id="demoBanner" class="demo-banner hidden">
+        Mod demo local activ. Pentru varianta online, publici Apps Script-ul ca Web App si pastrezi linkul lui in `app.js`.
+      </section>
+
+      <section id="loginPage" class="screen-card auth-card">
+        <div class="section-kicker">Acces securizat</div>
+        <div class="section-header">
+          <div>
+            <h2>Registru proiecte si intrari-iesiri</h2>
+            <p>Autentificarea deschide sesiunea, iar inchiderea ferestrei cu X trimite delogarea automat.</p>
+          </div>
+          <div class="pill-note">GitHub Pages + Google Sheets</div>
+        </div>
+        <div class="auth-grid">
+          <label class="field">
+            <span>Utilizator</span>
+            <input id="loginUsername" type="text" placeholder="ex: admin" autocomplete="username" />
+          </label>
+          <label class="field">
+            <span>Parola</span>
+            <input id="loginPassword" type="password" placeholder="Introdu parola" autocomplete="current-password" />
+          </label>
+        </div>
+        <label class="remember-row">
+          <input id="showPasswordCheck" type="checkbox" />
+          <span>Arata parola</span>
+        </label>
+        <label class="remember-row">
+          <input id="rememberLogin" type="checkbox" />
+          <span>Tine-ma minte pe acest calculator</span>
+        </label>
+        <div class="button-row">
+          <button id="loginBtn" class="btn btn-primary">Login</button>
+        </div>
+        <p id="loginStatus" class="inline-status"></p>
+        <div id="demoCredentials" class="demo-credentials hidden">
+          Cont demo admin: <strong>admin / Pr0iectȘimleu!2026</strong><br />
+          Cont demo operator: <strong>operator / Op3ratorȚehnic!2026</strong>
+        </div>
+      </section>
+
+      <section id="appPage" class="hidden">
+        <div class="hero-panel">
+          <div>
+            <div class="section-kicker">Registru centralizat</div>
+            <h2>Proiecte, progres si evidenta documentelor intr-un singur loc</h2>
+            <p>Numele operatorului se completeaza automat din contul logat, iar datele pot fi editate daca apar corectii.</p>
+          </div>
+          <div class="hero-meta">
+            <div class="hero-chip">
+              <span class="chip-label">Utilizator</span>
+              <strong id="activeUserLabel">-</strong>
+            </div>
+            <div class="hero-chip">
+              <span class="chip-label">Rol</span>
+              <strong id="activeRoleLabel">-</strong>
+            </div>
+            <div class="hero-chip">
+              <span class="chip-label">Sesiune</span>
+              <strong id="sessionStateLabel">Activa</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="main-tabs">
+          <button id="tabProjectsBtn" class="tab-btn active" type="button">Registru proiecte</button>
+          <button id="tabLedgerBtn" class="tab-btn" type="button">Registru intrari - iesiri</button>
+        </div>
+
+        <section id="projectsSection">
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span>Total proiecte</span>
+              <strong id="totalProjectsStat">0</strong>
+              <small>Inregistrari vizibile in contul curent</small>
+            </article>
+            <article class="stat-card">
+              <span>In lucru</span>
+              <strong id="activeProjectsStat">0</strong>
+              <small>Proiecte cu status activ</small>
+            </article>
+            <article class="stat-card">
+              <span>Scadente apropiate</span>
+              <strong id="soonProjectsStat">0</strong>
+              <small>Termen in urmatoarele 14 zile</small>
+            </article>
+            <article class="stat-card danger-glow">
+              <span>Intarziate</span>
+              <strong id="lateProjectsStat">0</strong>
+              <small>Termen depasit si neinchise</small>
+            </article>
+            <article class="stat-card accent-glow">
+              <span>Progres mediu</span>
+              <strong id="avgProgressStat">0%</strong>
+              <small>Executie medie calculata din procente</small>
+            </article>
+          </div>
+
+          <div class="layout-grid">
+            <section class="screen-card form-card">
+              <div class="section-header">
+                <div>
+                  <div class="section-kicker">Introducere date</div>
+                  <h3 id="formTitle">Adauga proiect nou</h3>
+                </div>
+                <div class="pill-note">Numele se completeaza automat din login</div>
+              </div>
+
+              <div class="form-grid">
+                <label class="field">
+                  <span>Operator</span>
+                  <input id="ownerNameInput" type="text" readonly />
+                </label>
+                <label class="field">
+                  <span>Cod proiect</span>
+                  <input id="projectCodeInput" type="text" placeholder="ex: PCT-2026-014" />
+                </label>
+                <label class="field field-wide">
+                  <span>Denumire proiect</span>
+                  <input id="projectNameInput" type="text" placeholder="Denumirea completa a proiectului" />
+                </label>
+                <label class="field">
+                  <span>Beneficiar</span>
+                  <input id="beneficiaryInput" type="text" placeholder="Client / beneficiar" />
+                </label>
+                <label class="field">
+                  <span>Judet</span>
+                  <select id="countySelect"></select>
+                </label>
+                <label class="field">
+                  <span>Localitate</span>
+                  <input id="localityInput" type="text" placeholder="ex: Oradea" />
+                </label>
+                <label class="field">
+                  <span>Categorie</span>
+                  <select id="categorySelect"></select>
+                </label>
+                <label class="field">
+                  <span>Stadiu</span>
+                  <select id="stageSelect"></select>
+                </label>
+                <label class="field">
+                  <span>Status</span>
+                  <select id="statusSelect"></select>
+                </label>
+                <label class="field">
+                  <span>Progres executie (%)</span>
+                  <input id="progressInput" type="number" min="0" max="100" step="1" placeholder="0 - 100" />
+                </label>
+                <div class="field progress-field">
+                  <span>Grafic progres</span>
+                  <div class="progress-preview">
+                    <div class="progress-preview-bar">
+                      <div id="progressPreviewFill" class="progress-preview-fill"></div>
+                    </div>
+                    <strong id="progressPreviewLabel">0%</strong>
+                  </div>
+                </div>
+                <label class="field">
+                  <span>Nr. inregistrare / contract</span>
+                  <input id="registrationNoInput" type="text" placeholder="Numar intern sau contract" />
+                </label>
+                <label class="field">
+                  <span>Data intrare</span>
+                  <input id="receivedDateInput" type="date" />
+                </label>
+                <label class="field">
+                  <span>Termen predare</span>
+                  <input id="deadlineInput" type="date" />
+                </label>
+                <label class="field field-wide">
+                  <span>Observatii</span>
+                  <textarea id="notesInput" rows="5" placeholder="Detalii importante, documente lipsa, observatii pentru echipa"></textarea>
+                </label>
+              </div>
+
+              <div class="button-row">
+                <button id="saveProjectBtn" class="btn btn-primary">Salveaza proiect</button>
+                <button id="cancelEditBtn" class="btn btn-secondary hidden" type="button">Anuleaza editarea</button>
+                <button id="logoutBtn" class="btn btn-ghost" type="button">Logout</button>
+              </div>
+              <p id="formStatus" class="inline-status"></p>
+            </section>
+
+            <div class="project-side">
+              <section class="screen-card chart-card">
+                <div class="section-header">
+                  <div>
+                    <div class="section-kicker">Grafic progres</div>
+                    <h3>Cat la % este facut fiecare proiect</h3>
+                  </div>
+                </div>
+                <div id="progressChart" class="progress-chart-empty">Nu exista proiecte pentru grafic.</div>
+              </section>
+
+              <section class="screen-card table-card">
+                <div class="section-header">
+                  <div>
+                    <div class="section-kicker">Registru online</div>
+                    <h3>Filtrare si verificare proiecte</h3>
+                  </div>
+                  <div class="table-actions">
+                    <button id="refreshBtn" class="btn btn-secondary" type="button">Actualizeaza</button>
+                  </div>
+                </div>
+
+                <div class="filters-grid">
+                  <label class="field">
+                    <span>Cauta</span>
+                    <input id="searchInput" type="search" placeholder="Cod, proiect, beneficiar, localitate" />
+                  </label>
+                  <label class="field">
+                    <span>Judet</span>
+                    <select id="filterCountySelect"></select>
+                  </label>
+                  <label class="field">
+                    <span>Status</span>
+                    <select id="filterStatusSelect"></select>
+                  </label>
+                </div>
+
+                <p class="table-hint">Daca inchizi pagina din X, sesiunea se inchide automat. La urmatoarea intrare te loghezi din nou.</p>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Cod</th>
+                        <th>Proiect</th>
+                        <th>Beneficiar</th>
+                        <th>Judet</th>
+                        <th>Stadiu</th>
+                        <th>Status</th>
+                        <th>Progres</th>
+                        <th>Termen</th>
+                        <th>Operator</th>
+                        <th>Actualizat</th>
+                        <th>Actiuni</th>
+                      </tr>
+                    </thead>
+                    <tbody id="projectsBody"></tbody>
+                  </table>
+                </div>
+                <div id="emptyState" class="empty-state">Nu exista inca proiecte salvate pentru filtrele alese.</div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section id="ledgerSection" class="hidden">
+          <div class="layout-grid ledger-layout">
+            <section class="screen-card form-card">
+              <div class="section-header">
+                <div>
+                  <div class="section-kicker">Registru intrari - iesiri</div>
+                  <h3 id="ledgerFormTitle">Adauga inregistrare noua</h3>
+                </div>
+                <div class="pill-note">Model vizual inspirat din registrul scanat</div>
+              </div>
+
+              <div class="form-grid ledger-form-grid">
+                <label class="field">
+                  <span>Operator</span>
+                  <input id="ledgerOwnerInput" type="text" readonly />
+                </label>
+                <label class="field">
+                  <span>Tip registru</span>
+                  <select id="ledgerDirectionSelect"></select>
+                </label>
+                <label class="field">
+                  <span>Nr. de inregistrare</span>
+                  <input id="ledgerRegNoInput" type="text" placeholder="Numarul de inregistrare" />
+                </label>
+                <label class="field">
+                  <span>Data inregistrare</span>
+                  <input id="ledgerRegDateInput" type="date" />
+                </label>
+                <label class="field field-wide">
+                  <span>Nr. si data documentului</span>
+                  <input id="ledgerDocDateInput" type="text" placeholder="Ex: Adresa nr. 154 / 22.06.2026" />
+                </label>
+                <label class="field field-wide">
+                  <span>De unde provine documentul</span>
+                  <input id="ledgerSourceInput" type="text" placeholder="Institutie, beneficiar sau expeditor" />
+                </label>
+                <label class="field field-wide">
+                  <span>Continutul pe scurt al documentului</span>
+                  <textarea id="ledgerSummaryInput" rows="4" placeholder="Continutul pe scurt al documentului"></textarea>
+                </label>
+                <label class="field field-wide">
+                  <span>Observatii</span>
+                  <textarea id="ledgerNotesInput" rows="4" placeholder="Observatii suplimentare"></textarea>
+                </label>
+              </div>
+
+              <div class="button-row">
+                <button id="saveLedgerBtn" class="btn btn-primary">Salveaza in registru</button>
+                <button id="cancelLedgerEditBtn" class="btn btn-secondary hidden" type="button">Anuleaza editarea</button>
+              </div>
+              <p id="ledgerStatus" class="inline-status"></p>
+            </section>
+
+            <div class="project-side">
+              <section class="screen-card ledger-sheet-card">
+                <div class="ledger-sheet-header">
+                  <div class="section-kicker">Previzualizare registru</div>
+                </div>
+                <div class="ledger-paper">
+                  <div class="ledger-paper-title" id="ledgerPaperHeading">INTRARE</div>
+                  <img src="./assets/ledger-header-reference.png" alt="Model registru intrare" class="ledger-reference-image" />
+                  <div class="table-wrap ledger-table-wrap">
+                    <table class="ledger-table">
+                      <thead>
+                        <tr>
+                          <th>Nr. de inregistrare</th>
+                          <th>Data inregistrare</th>
+                          <th>Nr. si data documentului</th>
+                          <th>De unde provine documentul</th>
+                          <th>Continutul pe scurt al documentului</th>
+                        </tr>
+                      </thead>
+                      <tbody id="ledgerBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <section class="screen-card table-card">
+                <div class="section-header">
+                  <div>
+                    <div class="section-kicker">Filtrare registru</div>
+                    <h3>Intrari si iesiri online</h3>
+                  </div>
+                  <div class="table-actions">
+                    <button id="refreshLedgerBtn" class="btn btn-secondary" type="button">Actualizeaza</button>
+                  </div>
+                </div>
+
+                <div class="filters-grid ledger-filters-grid">
+                  <label class="field">
+                    <span>Tip</span>
+                    <select id="filterLedgerDirectionSelect"></select>
+                  </label>
+                  <label class="field field-wide">
+                    <span>Cauta</span>
+                    <input id="filterLedgerSearchInput" type="search" placeholder="Numar inregistrare, document, provenienta, continut" />
+                  </label>
+                </div>
+                <div class="table-wrap">
+                  <table class="ledger-admin-table">
+                    <thead>
+                      <tr>
+                        <th>Tip</th>
+                        <th>Nr. de inregistrare</th>
+                        <th>Data inregistrare</th>
+                        <th>Operator</th>
+                        <th>Actualizat</th>
+                        <th>Actiuni</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ledgerAdminBody"></tbody>
+                  </table>
+                </div>
+                <div id="ledgerEmptyState" class="empty-state">Nu exista inca intrari sau iesiri pentru filtrele alese.</div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
