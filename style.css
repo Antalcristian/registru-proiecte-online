@@ -98,6 +98,16 @@ textarea {
   display: block;
 }
 
+.brand-logo-photo {
+  width: 152px;
+  object-fit: contain;
+}
+
+.certrom-logo-photo {
+  width: 168px;
+  object-fit: contain;
+}
+
 .brand-mark-copy,
 .brand-badge-copy {
   display: flex;
@@ -116,19 +126,25 @@ textarea {
 
 .brand-copy h1 {
   margin: 0 0 8px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.55rem, 3vw, 2.3rem);
+  font-family: Verdana, "Trebuchet MS", sans-serif;
+  font-size: clamp(1.35rem, 2.6vw, 2rem);
   line-height: 1.08;
   color: #77726e;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .brand-copy p {
   margin: 4px 0;
-  font-size: clamp(1rem, 2vw, 1.4rem);
+  font-size: clamp(0.98rem, 1.65vw, 1.16rem);
   font-style: italic;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   color: #81786f;
+}
+
+.brand-copy a {
+  font-weight: 700;
 }
 
 .main-shell {
