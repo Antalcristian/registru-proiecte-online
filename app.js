@@ -1,4 +1,4 @@
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxjyoeTapub57qLu0Gou6h1VNG4Sq2kmdAQeHYPnAFC_fGsczxDPF2rEf_Qfo6LHHAI/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzNawIUYjmKYdZv3Hq-jh19S4xQzQ5drD01Sp4lbob1uk0xdmX00ClljL0xz-dSyn8q/exec";
 const SESSION_TIMEOUT_MS = 15 * 60 * 1000;
 const SESSION_STORAGE_KEY = "projectRegistrySession";
 const PROJECT_STORAGE_KEY = "projectRegistryMockProjects";
@@ -628,7 +628,7 @@ function callApiJsonp(params) {
     const script = document.createElement("script");
     const timeoutId = window.setTimeout(() => {
       cleanup();
-      reject(new Error("Cererea catre Apps Script a expirat."));
+      reject(new Error("Apps Script nu a raspuns. Verifica daca Web app-ul este public pe Anyone."));
     }, 20000);
 
     function cleanup() {
@@ -644,7 +644,7 @@ function callApiJsonp(params) {
 
     script.onerror = () => {
       cleanup();
-      reject(new Error("Nu s-a putut contacta Apps Script."));
+      reject(new Error("Apps Script nu este accesibil public. Deschide URL-ul /exec intr-o fereastra incognito si seteaza deploy-ul pe Anyone."));
     };
 
     script.src = buildApiUrl({ ...params, callback: callbackName, _: Date.now() });
