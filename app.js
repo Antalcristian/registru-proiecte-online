@@ -52,6 +52,7 @@ const state = {
 
 const el = (id) => document.getElementById(id);
 const todayIso = () => new Date().toISOString().slice(0, 10);
+let jsonpCounter = 0;
 
 function isMockBackend() {
   return !GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("PASTE_APPS_SCRIPT");
@@ -599,18 +600,53 @@ async function mockApiPost(payload) {
   return { ok: false, message: "Actiune necunoscuta." };
 }
 
+function buildApiUrl(params) {
+  const url = new URL(GOOGLE_SCRIPT_URL);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    url.searchParams.set(key, String(value));
+  });
+  return url.toString();
+}
+
+function callApiJsonp(params) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `projectRegistryJsonp_${Date.now()}_${jsonpCounter++}`;
+    const script = document.createElement("script");
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Cererea catre Apps Script a expirat."));
+    }, 20000);
+
+    function cleanup() {
+      window.clearTimeout(timeoutId);
+      if (script.parentNode) script.parentNode.removeChild(script);
+      delete window[callbackName];
+    }
+
+    window[callbackName] = (payload) => {
+      cleanup();
+      resolve(payload);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("Nu s-a putut contacta Apps Script."));
+    };
+
+    script.src = buildApiUrl({ ...params, callback: callbackName, _: Date.now() });
+    document.body.appendChild(script);
+  });
+}
+
 async function callApiGet(params) {
   if (state.mockMode) return mockApiGet(params);
-  const url = new URL(GOOGLE_SCRIPT_URL);
-  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value ?? ""));
-  const response = await fetch(url.toString(), { method: "GET", cache: "no-store", redirect: "follow" });
-  return response.json();
+  return callApiJsonp(params);
 }
 
 async function callApiPost(payload) {
   if (state.mockMode) return mockApiPost(payload);
-  const response = await fetch(GOOGLE_SCRIPT_URL, { method: "POST", body: JSON.stringify(payload), redirect: "follow" });
-  return response.json();
+  return callApiJsonp(payload);
 }
 
 function projectMatchesFilters(project) {
@@ -906,10 +942,10 @@ async function login() {
     setInlineStatus("loginStatus", "", "info");
   } catch (error) {
     const message = String(error && error.message ? error.message : error);
-    if (message.toLowerCase().includes("failed to fetch")) {
+    if (message.toLowerCase().includes("failed to fetch") || message.toLowerCase().includes("apps script")) {
       setInlineStatus(
         "loginStatus",
-        "Nu s-a putut realiza loginul. Verifica in Apps Script: Deploy -> Manage deployments -> Web app, apoi seteaza Execute as: Me si Who has access: Anyone.",
+        "Nu s-a putut realiza loginul. Copiaza noul Code.gs in Apps Script, da Deploy pe versiunea noua si urca noul app.js pe GitHub Pages.",
         "error"
       );
       return;
@@ -942,13 +978,13 @@ async function logout(isAutomatic) {
 
 function sendLogoutBeacon() {
   if (!state.session.sessionToken) return;
-  const payload = JSON.stringify({ action: "logout", sessionToken: state.session.sessionToken });
   if (state.mockMode) {
     deactivateMockSession(state.session.sessionToken);
     clearSession();
     return;
   }
-  if (navigator.sendBeacon) navigator.sendBeacon(GOOGLE_SCRIPT_URL, payload);
+  const image = new Image();
+  image.src = buildApiUrl({ action: "logout", sessionToken: state.session.sessionToken, _: Date.now() });
   clearSession();
 }
 
