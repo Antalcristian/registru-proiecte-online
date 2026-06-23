@@ -603,13 +603,13 @@ async function callApiGet(params) {
   if (state.mockMode) return mockApiGet(params);
   const url = new URL(GOOGLE_SCRIPT_URL);
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value ?? ""));
-  const response = await fetch(url.toString(), { method: "GET", cache: "no-store" });
+  const response = await fetch(url.toString(), { method: "GET", cache: "no-store", redirect: "follow" });
   return response.json();
 }
 
 async function callApiPost(payload) {
   if (state.mockMode) return mockApiPost(payload);
-  const response = await fetch(GOOGLE_SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
+  const response = await fetch(GOOGLE_SCRIPT_URL, { method: "POST", body: JSON.stringify(payload), redirect: "follow" });
   return response.json();
 }
 
@@ -905,7 +905,16 @@ async function login() {
     await Promise.all([loadProjects(), loadLedgerRows()]);
     setInlineStatus("loginStatus", "", "info");
   } catch (error) {
-    setInlineStatus("loginStatus", `Nu s-a putut realiza loginul: ${error.message}`, "error");
+    const message = String(error && error.message ? error.message : error);
+    if (message.toLowerCase().includes("failed to fetch")) {
+      setInlineStatus(
+        "loginStatus",
+        "Nu s-a putut realiza loginul. Verifica in Apps Script: Deploy -> Manage deployments -> Web app, apoi seteaza Execute as: Me si Who has access: Anyone.",
+        "error"
+      );
+      return;
+    }
+    setInlineStatus("loginStatus", `Nu s-a putut realiza loginul: ${message}`, "error");
   }
 }
 
