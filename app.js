@@ -53,6 +53,7 @@ const state = {
 
 const el = (id) => document.getElementById(id);
 const todayIso = () => new Date().toISOString().slice(0, 10);
+let jsonpCounter = 0;
 
 function isMockBackend() {
   return !GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("PASTE_APPS_SCRIPT");
@@ -604,19 +605,51 @@ async function mockApiPost(payload) {
 
 async function callApiGet(params) {
   if (state.mockMode) return mockApiGet(params);
-  const qs = new URLSearchParams(params).toString();
-  const response = await fetch(`${GOOGLE_SCRIPT_URL}?${qs}`);
-  return await response.json();
+  return callApiJsonp(params);
 }
 
 async function callApiPost(payload) {
   if (state.mockMode) return mockApiPost(payload);
-  const response = await fetch(GOOGLE_SCRIPT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload)
+  return callApiJsonp(payload);
+}
+
+function buildApiUrl(params) {
+  const url = new URL(GOOGLE_SCRIPT_URL);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    url.searchParams.set(key, String(value));
   });
-  return await response.json();
+  return url.toString();
+}
+
+function callApiJsonp(params) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `projectRegistryJsonp_${Date.now()}_${jsonpCounter++}`;
+    const script = document.createElement("script");
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Cererea catre Apps Script a expirat."));
+    }, 20000);
+
+    function cleanup() {
+      window.clearTimeout(timeoutId);
+      if (script.parentNode) script.parentNode.removeChild(script);
+      delete window[callbackName];
+    }
+
+    window[callbackName] = (payload) => {
+      cleanup();
+      resolve(payload);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("Nu s-a putut contacta Apps Script."));
+    };
+
+    script.src = buildApiUrl({ ...params, callback: callbackName, _: Date.now() });
+    document.body.appendChild(script);
+  });
 }
 
 function projectMatchesFilters(project) {
@@ -967,17 +1000,13 @@ function sendLogoutBeacon() {
     clearSession();
     return;
   }
-  try {
-    const payload = JSON.stringify({
-      action: "logout",
-      username: state.session.username,
-      password: state.session.password,
-      sessionToken: state.session.sessionToken
-    });
-    navigator.sendBeacon(GOOGLE_SCRIPT_URL, new Blob([payload], { type: "text/plain;charset=utf-8" }));
-  } catch {
-    // ignore unload errors
-  }
+  const image = new Image();
+  image.src = buildApiUrl({
+    action: "logout",
+    username: state.session.username,
+    sessionToken: state.session.sessionToken,
+    _: Date.now()
+  });
   clearSession();
 }
 
